@@ -17,7 +17,7 @@ def list_instances():
     data = request.json
     source = data.get('source')
     region = data.get('region')
-    
+
     if source == 'aws':
         aws_access_key = data.get('awsAccessKey')
         aws_secret_key = data.get('awsSecretKey')
@@ -32,12 +32,26 @@ def list_instances():
         
         # List EC2 instances
         instances = ec2_client.describe_instances()
-        instance_ids = []
+        instance_info = []
         for reservation in instances['Reservations']:
             for instance in reservation['Instances']:
-                instance_ids.append(instance['InstanceId'])
+                # Get the instance ID
+                instance_id = instance['InstanceId']
+                
+                # Get the instance name from tags
+                instance_name = None
+                if 'Tags' in instance:
+                    for tag in instance['Tags']:
+                        if tag['Key'] == 'Name':
+                            instance_name = tag['Value']
+                            break
+                # If no name tag is found, use the instance ID as the name
+                if not instance_name:
+                    instance_name = instance_id
+                
+                instance_info.append(f"{instance_id} ({instance_name})")
 
-        return jsonify({'instances': instance_ids})
+        return jsonify({'instances': instance_info})
 
     # Placeholder for Azure and GCP logic
     return jsonify({'instances': []})
@@ -55,3 +69,4 @@ def migrate_instances():
 
 if __name__ == '__main__':
     app.run(debug=True)
+	
